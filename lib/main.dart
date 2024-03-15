@@ -7,6 +7,8 @@ import 'package:flutter_ai_ui/pages/control_center/+page.dart';
 import 'package:flutter_ai_ui/pages/device_diagnosis/+page.dart';
 import 'package:flutter_ai_ui/pages/enroll_device/+page.dart';
 import 'package:flutter_ai_ui/pages/status_overview/+page.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 void main() {
   OpenAI.apiKey = ''; // your OpenAI API key
@@ -45,17 +47,30 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.deepPurple, brightness: Brightness.dark),
+            seedColor: const Color(0xff00497E), brightness: Brightness.light),
       ),
-      home: MyHomePage(),
+      home: const MyHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatelessWidget {
-  MyHomePage({super.key});
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
 
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
   final _actionController = TextEditingController();
+
+  final SpeechToText speech = SpeechToText();
+
+  @override
+  void initState() {
+    super.initState();
+    speech.initialize();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +78,26 @@ class MyHomePage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('AI based navigation'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          if (speech.isListening) {
+            speech.stop().then((_) => _performAction(context));
+            return;
+          }
+          await speech.listen(
+            onResult: (result) {
+              _actionController.text = result.recognizedWords;
+              setState(() {});
+            },
+          );
+          setState(() {});
+        },
+        child: Icon(!speech.isAvailable
+            ? Icons.mic_none
+            : speech.isListening
+                ? Icons.mic
+                : Icons.mic_off),
       ),
       body: Center(
         child: Container(
@@ -77,14 +112,6 @@ class MyHomePage extends StatelessWidget {
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'How can I help you?',
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  child: const Text('Do it!'),
-                  onPressed: () => _performAction(context),
                 ),
               ),
             ],
