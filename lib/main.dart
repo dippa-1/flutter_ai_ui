@@ -44,10 +44,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Flutter AI UI',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xff00497E), brightness: Brightness.light),
+            seedColor: const Color(0xff00497E), brightness: Brightness.dark),
       ),
       home: const MyHomePage(),
     );
@@ -80,18 +80,28 @@ class _MyHomePageState extends State<MyHomePage> {
         title: const Text('AI based navigation'),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
+        onPressed: () {
           if (speech.isListening) {
             speech.stop().then((_) => _performAction(context));
             return;
           }
-          await speech.listen(
-            onResult: (result) {
-              _actionController.text = result.recognizedWords;
-              setState(() {});
-            },
-          );
-          setState(() {});
+          speech
+              .listen(
+                onResult: (result) {
+                  _actionController.text = result.recognizedWords;
+                  setState(() {});
+                },
+              )
+              .then((_) => setState(() {}))
+              .catchError((e) {
+                if (e is SpeechToTextNotInitializedException) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Speech recognition not available"),
+                    ),
+                  );
+                }
+              });
         },
         child: Icon(!speech.isAvailable
             ? Icons.mic_none
@@ -109,6 +119,9 @@ class _MyHomePageState extends State<MyHomePage> {
             children: <Widget>[
               TextField(
                 controller: _actionController,
+                maxLength: 1000,
+                minLines: 5,
+                maxLines: 5,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'How can I help you?',
